@@ -1,40 +1,47 @@
-
-use std::fs::File;
 use crate::common::puzzle_input_reader::PuzzleInput;
+use std::fs::File;
 
 struct CalibrationValue {
-    pub value: u64
+    pub value: u64,
 }
 
 impl From<String> for CalibrationValue {
     fn from(value: String) -> Self {
-        let collection = value.as_bytes().to_owned().into_iter().filter(|&b| b >= b'0' && b <= b'9').collect::<Vec<u8>>();
-        let new_value = String::from_utf8(vec![collection[0], collection[collection.len() - 1]]).unwrap().parse::<u64>().unwrap();
+        let collection = value
+            .as_bytes()
+            .to_owned()
+            .into_iter()
+            .filter(|&b| b >= b'0' && b <= b'9')
+            .collect::<Vec<u8>>();
+        let new_value = String::from_utf8(vec![collection[0], collection[collection.len() - 1]])
+            .unwrap()
+            .parse::<u64>()
+            .unwrap();
         CalibrationValue { value: new_value }
     }
 }
 
 struct UpdatedCalibrationValue {
-    pub value: u64
+    pub value: u64,
 }
 
 #[derive(Clone, Copy)]
 enum Search<'a> {
     Number(&'a str),
-    Word(&'a str, &'a str)
+    Word(&'a str, &'a str),
 }
 
 impl<'a> Search<'a> {
     fn value(&self) -> &'a str {
         match self {
             Self::Number(s) => s,
-            Self::Word(s, _) => s
+            Self::Word(s, _) => s,
         }
     }
     fn as_num(&self) -> u8 {
         match self {
             Self::Number(s) => s.as_bytes()[0],
-            Self::Word(_, s) => s.as_bytes()[0]
+            Self::Word(_, s) => s.as_bytes()[0],
         }
     }
 }
@@ -60,39 +67,39 @@ const PART_2_SEARCH: [Search<'static>; 18] = [
     Search::Word("nine", "9"),
 ];
 
-fn find_first_last<'a, 'b>(search_string: &'a str, options: Vec<Search<'b>>) -> (Search<'b>, Search<'b>) {
-    (options.iter()
-        .map(|option| (search_string.find(option.value()), option))
-        .filter(|result| result.0.is_some())
-        .min_by(|x,y| {
-            x.0.unwrap().cmp(&y.0.unwrap())
-        }).unwrap().1.clone(),
-    options.iter()
-        .map(|option| (search_string.rfind(option.value()), option))
-        .filter(|result| result.0.is_some())
-        .max_by(|x,y| {
-            x.0.unwrap().cmp(&y.0.unwrap())
-        }).unwrap().1.clone()
+fn find_first_last<'a, 'b>(
+    search_string: &'a str,
+    options: Vec<Search<'b>>,
+) -> (Search<'b>, Search<'b>) {
+    (
+        options
+            .iter()
+            .map(|option| (search_string.find(option.value()), option))
+            .filter(|result| result.0.is_some())
+            .min_by(|x, y| x.0.unwrap().cmp(&y.0.unwrap()))
+            .unwrap()
+            .1
+            .clone(),
+        options
+            .iter()
+            .map(|option| (search_string.rfind(option.value()), option))
+            .filter(|result| result.0.is_some())
+            .max_by(|x, y| x.0.unwrap().cmp(&y.0.unwrap()))
+            .unwrap()
+            .1
+            .clone(),
     )
 }
 
 impl From<String> for UpdatedCalibrationValue {
     fn from(value: String) -> Self {
-        // let value = value.replace("one", "1")
-        //                          .replace("two", "2")
-        //                          .replace("three", "3")
-        //                          .replace("four", "4")
-        //                          .replace("five", "5")
-        //                          .replace("six", "6")
-        //                          .replace("seven", "7")
-        //                          .replace("eight", "8")
-        //                          .replace("nine", "9");
-
-        let mut searching = true;
-        print!("old: {:?}, ", value);
+        // print!("old: {:?}, ", value);
         let (first, last) = find_first_last(&value, Vec::from(PART_2_SEARCH));
-        let new_value = String::from_utf8(vec![first.as_num(), last.as_num()]).unwrap().parse::<u64>().unwrap();
-        println!("Final: {:?}", new_value);
+        let new_value = String::from_utf8(vec![first.as_num(), last.as_num()])
+            .unwrap()
+            .parse::<u64>()
+            .unwrap();
+        // println!("Final: {:?}", new_value);
         UpdatedCalibrationValue { value: new_value }
     }
 }

@@ -1,9 +1,11 @@
-use std::fs::File;
 use std::error::Error;
+use std::fs::File;
 use std::io::Read;
 
 pub struct PuzzleInput<T>
-where T: From<String> {
+where
+    T: From<String>,
+{
     lines: Vec<T>,
 }
 
@@ -12,41 +14,50 @@ pub fn read_file(file_name: &str) -> File {
 }
 
 impl<T> PuzzleInput<T>
-where T: From<String> {
-
+where
+    T: From<String>,
+{
     pub fn from_file(file: &mut File) -> Result<Self, Box<dyn Error>> {
         // let contents = fs::read_to_string(file_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
-        let lines = contents.split("\n").filter(|s| s.len() > 0).map(|s| s.to_string().into()).collect::<Vec<T>>();
+        let lines = contents
+            .split("\n")
+            .filter(|s| s.len() > 0)
+            .map(|s| s.to_string().into())
+            .collect::<Vec<T>>();
 
-        Ok(Self {
-            lines,
-        })
+        Ok(Self { lines })
     }
 }
 
 impl<'a, T> IntoIterator for &'a PuzzleInput<T>
-where T: From<String> {
+where
+    T: From<String>,
+{
     type Item = &'a T;
     type IntoIter = PuzzleInputIterator<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         PuzzleInputIterator {
             current_line: 0,
-            puzzle_input: self
+            puzzle_input: self,
         }
     }
 }
 
 pub struct PuzzleInputIterator<'a, T>
-where T: From<String> {
+where
+    T: From<String>,
+{
     current_line: usize,
-    puzzle_input: &'a PuzzleInput<T>
+    puzzle_input: &'a PuzzleInput<T>,
 }
 
 impl<'a, T> Iterator for PuzzleInputIterator<'a, T>
-where T: From<String> {
+where
+    T: From<String>,
+{
     type Item = &'a T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -66,7 +77,10 @@ where T: From<String> {
 
 #[cfg(test)]
 pub mod test {
-    use std::{fs::File, io::{ SeekFrom, Write, Seek }};
+    use std::{
+        fs::File,
+        io::{Seek, SeekFrom, Write},
+    };
     use tempfile;
 
     use super::PuzzleInput;
