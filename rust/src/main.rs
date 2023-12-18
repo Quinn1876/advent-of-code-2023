@@ -13,5 +13,5 @@ fn main() {
     let mut input3_1 = read_file("puzzles/day3.txt");
     let mut input3_2 = read_file("puzzles/day3.txt");
     println!("Day3-1: {}", day3::run_part_1(&mut input3_1));
-    // println!("Day3-2: {}", day2::run_part_2(&mut input2_2));
+    println!("Day3-2: {}", day3::run_part_2(&mut input3_2));
 }

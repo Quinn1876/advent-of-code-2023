@@ -1,4 +1,4 @@
-use std::{collections::HashMap, fs::File};
+use std::{collections::{HashMap, hash_set, HashSet}, fs::File};
 
 use crate::common::puzzle_input_reader::PuzzleInput;
 
@@ -124,7 +124,7 @@ impl SchematicPosition {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 enum SchematicEntry {
     Number {
         value: u32,
@@ -217,7 +217,21 @@ impl<'a> IntoIterator for &'a SchematicEntry {
                     state: SearchBoxState::Top,
                 }
             },
-            _ => panic!("Only call on number")
+            SchematicEntry::Gear { pos } => {
+                let mut top_left = pos.clone();
+                top_left.row -= 1;
+                top_left.col -= 1;
+                let mut bottom_right = pos.clone();
+                bottom_right.row += 1;
+                bottom_right.col += 1;
+                Self::IntoIter {
+                    top_left,
+                    bottom_right,
+                    current_position: top_left.clone(),
+                    state: SearchBoxState::Top,
+                }
+            }
+            _ => panic!("Only call on number or gear")
         }
     }
 }
@@ -237,17 +251,20 @@ impl From<PuzzleInput<SchematicEntryBuilderLine>> for Schematic {
                         current_col += width as isize;
                     }
                     SchematicEntryBuilder::Number { value, width } => {
-                        assert!(schematic_map.insert(
-                            SchematicPosition::new(row as isize, current_col),
-                            SchematicEntry::Number {
-                                value,
-                                first_pos: SchematicPosition::new(row as isize, current_col),
-                                last_pos: SchematicPosition::new(
-                                    row as isize,
-                                    current_col + (width as isize) - 1,
-                                ),
-                            },
-                        ).is_none());
+                        let entry = SchematicEntry::Number {
+                            value,
+                            first_pos: SchematicPosition::new(row as isize, current_col),
+                            last_pos: SchematicPosition::new(
+                                row as isize,
+                                current_col + (width as isize) - 1,
+                            ),
+                        };
+                        for c in 0..width {
+                            assert!(schematic_map.insert(
+                                SchematicPosition::new(row as isize, current_col + (c as isize)),
+                                entry.clone(),
+                            ).is_none());
+                        }
                         current_col += width as isize;
                     }
                     SchematicEntryBuilder::Symbol => {
@@ -296,6 +313,34 @@ impl Schematic {
         result
     }
 
+    pub fn get_gear_ratios(&self) -> Vec<u32> {
+        let mut result: Vec<u32> = vec![];
+        for entry in self.schematic_map.values().filter(|&e| matches!(e, SchematicEntry::Gear { pos: _ })) {
+            let mut current_ratio = 1;
+            let mut num_elements_found = 0;
+            let mut found_elements = HashSet::new();
+            for cursor in entry.into_iter() {
+                if let Some(val) = self.schematic_map.get(&cursor) {
+                    match *val {
+                         SchematicEntry::Number { value, first_pos, last_pos: _ } => {
+                            if !found_elements.contains(&first_pos) {
+                                found_elements.insert(first_pos);
+                                current_ratio *= value;
+                                num_elements_found += 1;
+                                if num_elements_found > 2 { break; }
+                            }
+                         },
+                         _ => {}
+                    }
+                }
+            }
+            if num_elements_found == 2 {
+                result.push(current_ratio);
+            }
+        }
+        result
+    }
+
     pub fn _print_numbers(&self) {
         for entry in self.schematic_map.values() {
             match *entry {
@@ -318,17 +363,32 @@ pub fn run_part_1(input: &mut File) -> u32 {
     schematic.get_part_numbers().iter().sum()
 }
 
+pub fn run_part_2(input: &mut File) -> u32 {
+    let puzzle_input: PuzzleInput<SchematicEntryBuilderLine> = PuzzleInput::from_file(input).unwrap();
+    let schematic = Schematic::from(puzzle_input);
+    // schematic.print_numbers();
+    schematic.get_gear_ratios().iter().sum()
+}
+
 #[cfg(test)]
 mod test {
     use crate::common::puzzle_input_reader::test::MockFile;
 
-    use super::run_part_1;
+    use super::{ run_part_1, run_part_2 };
 
     #[test]
     fn test_sample_input_1() {
         let mut input = MockFile::with_contents("467..114..\n...*......\n..35..633.\n......#...\n617*......\n.....+.58.\n..592.....\n......755.\n...$.*....\n.664.598..");
         let output = run_part_1(input.get_file());
         let expected_output = 4361;
+        assert_eq!(output, expected_output);
+    }
+
+    #[test]
+    fn test_sample_input_2() {
+        let mut input = MockFile::with_contents("467..114..\n...*......\n..35..633.\n......#...\n617*......\n.....+.58.\n..592.....\n......755.\n...$.*....\n.664.598..");
+        let output = run_part_2(input.get_file());
+        let expected_output = 467835;
         assert_eq!(output, expected_output);
     }
 
